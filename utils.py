@@ -102,53 +102,57 @@ def concat_issues():
     )
 
 
-def concat_posters():
-    json_files = []
-    for file in os.listdir(os.getcwd()):
-        if file.startswith("poster_"):
-            json_files.append(file)
-    json_files = sorted(json_files)
+# def concat_posters():
+#     json_files = []
+#     for file in os.listdir(os.getcwd()):
+#         if file.startswith("poster_"):
+#             json_files.append(file)
+#     json_files = sorted(json_files)
 
-    df = pd.DataFrame()
-    for file in json_files:
-        print(file)
-        with open(file, "r") as f:
-            data = json.load(f)
-        _df = pd.json_normalize(data)
-        df = pd.concat([df, _df], axis=0).reset_index(drop=True)
+#     df = pd.DataFrame()
+#     for file in json_files:
+#         print(file)
+#         with open(file, "r") as f:
+#             data = json.load(f)
+#         _df = pd.json_normalize(data)
+#         df = pd.concat([df, _df], axis=0).reset_index(drop=True)
 
-    # Helper columns to steer the LLM
-    def location_to_lat_lon(location):
-        import numpy as np
+#     # Helper columns to steer the LLM
+#     def location_to_lat_lon(location):
+#         import numpy as np
 
-        lat_lon = {
-            "lat": np.nan,
-            "lon": np.nan,
-        }
-        if location != np.nan:
-            from geopy.geocoders import Nominatim
+#         lat_lon = {
+#             "lat": np.nan,
+#             "lon": np.nan,
+#         }
+#         if location != np.nan:
+#             from geopy.geocoders import Nominatim
 
-            geolocator = Nominatim(user_agent="_")
-            try:
-                geocoded_location = geolocator.geocode(location)
-                lat_lon["lat"] = geocoded_location.latitude
-                lat_lon["lon"] = geocoded_location.longitude
-            except AttributeError:
-                pass
+#             geolocator = Nominatim(user_agent="_")
+#             try:
+#                 geocoded_location = geolocator.geocode(location)
+#                 lat_lon["lat"] = geocoded_location.latitude
+#                 lat_lon["lon"] = geocoded_location.longitude
+#             except AttributeError:
+#                 pass
 
-        return pd.Series(
-            [
-                lat_lon["lat"],
-                lat_lon["lon"],
-            ]
-        )
+#         return pd.Series(
+#             [
+#                 lat_lon["lat"],
+#                 lat_lon["lon"],
+#             ]
+#         )
 
-    df[["location_lat", "location_lon"]] = df["location"].apply(location_to_lat_lon)
+#     df[["location_lat", "location_lon"]] = df["location"].apply(location_to_lat_lon)
 
-    df.to_csv("all_poster_details.csv")
+#     df.to_csv("all_poster_details.csv")
 
 
 def concat_posters_and_commenters():
+    import json
+    import os
+    import pandas as pd
+
     json_files = []
     for file in os.listdir(os.getcwd()):
         if file.startswith("poster_"):
@@ -176,6 +180,11 @@ def concat_posters_and_commenters():
 
     df = df.drop_duplicates().reset_index(drop=True)
 
+    # Fix some locations
+    df["location"] = df["location"].replace(
+        {"UK": "United Kingdom", "MA": "Massachusetts"}
+    )
+
     # Helper columns to steer the LLM
     def location_to_lat_lon(location):
         import numpy as np
@@ -203,10 +212,42 @@ def concat_posters_and_commenters():
         )
 
     df[["location_lat", "location_lon"]] = df["location"].apply(location_to_lat_lon)
+
+    INTERNAL_DEVELOPERS = [
+        "NVIDIA",
+        "@rapidsai",
+        "@NVIDIA",
+        "Nvidia",
+        "NVIDIA @rapidsai",
+        " GPU-Accelerating Apache Spark @Nvidia",
+        "@NVIDIA @rapidsai",
+        "@rapidsai",
+        "@rapidsai ",
+        "Nvidia Rapids",
+        "@Nvidia",
+        "@nvidia",
+        "Nvidia",
+        "NVIDIA & Georgia Institute of Technology",
+        "@NVIDIA @JGU-HPC ",
+        "NVIDIA, Inc",
+        "NVIDIA @rapidsai ",
+    ]
+
+    def is_nvidia_employee(x):
+        if x in INTERNAL_DEVELOPERS:
+            return True
+        else:
+            return False
+
+    df["is_nvidia_employee"] = df["company"].apply(is_nvidia_employee)
+
     df.to_csv("all_poster_commenter_details.csv")
+    df.to_parquet("all_poster_commenter_details.parquet")
 
 
 def join_csvs():
+    import pandas as pd
+
     df = pd.read_csv("issue_details.csv")
     df2 = pd.read_csv("all_poster_commenter_details.csv").rename(
         columns={"login": "author.login"}
@@ -331,7 +372,7 @@ if __name__ == "__main__":
     # concat_issues()
     # pull_posters()
     # pull_commenters()
-    # concat_posters_and_commenters()
+    concat_posters_and_commenters()
     join_csvs()
     # upload_csv_to_hugging_face_hub()
     # chat_to_dataset_using_langchain()
