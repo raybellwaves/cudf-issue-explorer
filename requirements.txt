@@ -1,11 +1,13 @@
 datasets
 huggingface_hub
+geodatasets
 geopy
 geopandas
 folium
 ipython
 ipykernel
 langchain
+langchain-cli
 langchain-experimental
 langchain-openai
 llm
@@ -20,3 +22,4 @@ streamlit-authenticator
 streamlit-folium
 tabulate
 transformers
+watchdog

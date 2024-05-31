@@ -93,6 +93,30 @@ def concat_issues():
 
     df["commenters"] = df["comments"].apply(extract_commenters)
 
+    def extract_label_names(labels):
+        # Return labe names as lists
+        # [], ["cudf.pandas","feature request"]
+        raise NotImplementedError
+
+    def flatten_comments(comments):
+        # Flattens comments
+        # [
+        #     {"commenter": "raybelwaves", "comment": "comment 1", "reactions": {"thumbs_up": 2}},
+        #     {"commenter": "someoneelse", "comment": "comment 2", "reactions": {"thumbs_up": 1}},
+        # ]
+        raise NotImplementedError
+
+    def remove_issue_template(body):
+        # Remove repeatable issue texts
+        repeatable_texts = [
+            "Thanks for opening an issue!",
+            "please first ensure that there is no other issue present",
+            "If there is no issue present please jump to a section below and delete the",
+        ]
+        for text in repeatable_texts:
+            if text in body:
+                return body.replace(text, "")
+
     df.to_csv("issue_details.csv")
     # Get unique posters
     df["author.login"].drop_duplicates().to_csv("issue_posters.csv")
@@ -285,6 +309,7 @@ def join_csvs():
         "repos_url",
         "name",
         "company",
+        "is_nvidia_employee",
         "blog",
         "location",
         "location_lat",
@@ -300,6 +325,28 @@ def join_csvs():
     ]
     df[sel_cols].to_csv("issue_details_with_posters_small.csv")
     df[sel_cols].to_parquet("issue_details_with_posters_small.parquet")
+
+    sel_cols = [
+        "title",
+        "body",
+        "createdAt",
+        "n_body_reactions_thumbs_up",
+        "n_body_reactions_thumbs_down",
+        "author.name",
+        "company",
+        "is_nvidia_employee",
+    ]
+    df[sel_cols].to_csv("issue_details_with_posters_min.csv")
+    df[sel_cols].to_parquet("issue_details_with_posters_min.parquet")
+
+    _df = df[sel_cols]
+    _df = (
+        _df[_df["is_nvidia_employee"] == False]
+        .drop(columns=["is_nvidia_employee"])
+        .reset_index(drop=True)
+    )
+    _df.to_csv("external_issue_details_with_posters_min.csv")
+    _df.to_parquet("external_issue_details_with_posters_min.parquet")
 
 
 def upload_csv_to_hugging_face_hub():
@@ -372,7 +419,7 @@ if __name__ == "__main__":
     # concat_issues()
     # pull_posters()
     # pull_commenters()
-    concat_posters_and_commenters()
+    # concat_posters_and_commenters()
     join_csvs()
     # upload_csv_to_hugging_face_hub()
     # chat_to_dataset_using_langchain()
