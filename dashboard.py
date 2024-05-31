@@ -160,7 +160,12 @@ st.subheader("Understanding developers")
 st.markdown(
     "We can explore the GitHub data to understand what developers are interested in "
     "and to ensure their requested features or bug are taken into account in the roadmap"
-    "You can ask questions such as **What issues are Walmart most interested in?**"
+    "You can ask questions such as "
+    "**What issues are Walmart most interested in?**"
+    "**What issue is ETH Zürich most interested in?**"
+    "**What issue has the most thumbs up?**"
+    "**What company posted the issue with the most thumbs up?**"
+    "**What are the top 5 issues with the most thumbs up?**"
 )
 st.markdown("**Note: this is a subsample of the data for demo puposes**")
 
@@ -171,7 +176,7 @@ agent = create_pandas_dataframe_agent(
 )
 content = st.text_input(
     "Ask questions about about external cudf users and developers using the GitHub data:",
-    "'What issues are Walmart most interested in?'",
+    "What issues are Walmart most interested in?",
 )
 if openai_api_key:
     st.write(agent_response(agent, content))
