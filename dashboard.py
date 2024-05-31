@@ -171,7 +171,11 @@ st.markdown("**Note: this is a subsample of the data for demo puposes**")
 
 df_issues = fetch_issue_data().drop(columns="body")
 agent = create_pandas_dataframe_agent(
-    OpenAI_langchain(temperature=0, model="gpt-3.5-turbo-instruct"),
+    OpenAI_langchain(
+        temperature=0,
+        model="gpt-3.5-turbo-instruct",
+        openai_api_key=openai_api_key,
+    ),
     df_issues,
 )
 content = st.text_input(
